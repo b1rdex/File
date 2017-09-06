@@ -8,7 +8,7 @@
  *
  * New BSD License
  *
- * Copyright © 2007-2017, Hoa community. All rights reserved.
+ * Copyright © 2007-2013, Ivan Enderlin. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,45 +34,70 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Hoa\File\Link;
+namespace {
 
-use Hoa\Consistency;
-use Hoa\File;
+from('Hoa')
+
+/**
+ * \Hoa\File\Exception
+ */
+-> import('File.Exception.~')
+
+/**
+ * \Hoa\File
+ */
+-> import('File.~')
+
+/**
+ * \Hoa\File\ReadWrite
+ */
+-> import('File.ReadWrite')
+
+/**
+ * \Hoa\File\Link\ReadWrite
+ */
+-> import('File.Link.ReadWrite')
+
+/**
+ * \Hoa\File\Directory
+ */
+-> import('File.Directory');
+
+}
+
+namespace Hoa\File\Link {
 
 /**
  * Class \Hoa\File\Link.
  *
  * Link handler.
  *
- * @copyright  Copyright © 2007-2017 Hoa community
+ * @author     Ivan Enderlin <ivan.enderlin@hoa-project.net>
+ * @copyright  Copyright © 2007-2013 Ivan Enderlin.
  * @license    New BSD License
  */
-class Link extends File
-{
+
+class Link extends \Hoa\File {
+
     /**
      * Open a link.
      *
+     * @access  public
      * @param   string  $streamName    Stream name.
      * @param   string  $mode          Open mode, see the parent::MODE_*
      *                                 constants.
      * @param   string  $context       Context ID (please, see the
      *                                 \Hoa\Stream\Context class).
      * @param   bool    $wait          Differ opening or not.
-     * @throws  \Hoa\File\Exception
+     * @return  void
+     * @throw   \Hoa\File\Exception
      */
-    public function __construct(
-        $streamName,
-        $mode,
-        $context = null,
-        $wait    = false
-    ) {
-        if (!is_link($streamName)) {
-            throw new File\Exception(
-                'File %s is not a link.',
-                0,
-                $streamName
-            );
-        }
+    public function __construct ( $streamName, $mode, $context = null,
+                                  $wait = false ) {
+
+        if(!is_link($streamName))
+            throw new \Hoa\File\Exception(
+                'File %s is not a link.', 0, $streamName);
 
         parent::__construct($streamName, $mode, $context, $wait);
 
@@ -82,115 +107,116 @@ class Link extends File
     /**
      * Get informations about a link.
      *
+     * @access  public
      * @return  array
      */
-    public function getStatistic()
-    {
+    public function getStatistic ( ) {
+
         return lstat($this->getStreamName());
     }
 
     /**
      * Change file group.
      *
+     * @access  public
      * @param   mixed   $group    Group name or number.
      * @return  bool
      */
-    public function changeGroup($group)
-    {
+    public function changeGroup ( $group ) {
+
         return lchgrp($this->getStreamName(), $group);
     }
 
     /**
      * Change file owner.
      *
+     * @access  public
      * @param   mixed   $user   User.
      * @return  bool
      */
-    public function changeOwner($user)
-    {
+    public function changeOwner ( $user ) {
+
         return lchown($this->getStreamName(), $user);
     }
 
     /**
      * Get file permissions.
      *
+     * @access  public
      * @return  int
      */
-    public function getPermissions()
-    {
+    public function getPermissions ( ) {
+
         return 41453; // i.e. lrwxr-xr-x
     }
 
     /**
      * Get the target of a symbolic link.
      *
+     * @access  public
      * @return  \Hoa\File\Generic
-     * @throws  \Hoa\File\Exception
+     * @throw   \Hoa\File\Exception
      */
-    public function getTarget()
-    {
+    public function getTarget ( ) {
+
         $target    = dirname($this->getStreamName()) . DS .
                      $this->getTargetName();
         $context   = null !== $this->getStreamContext()
                          ? $this->getStreamContext()->getCurrentId()
                          : null;
 
-        if (true === is_link($target)) {
+        if(true === is_link($target))
             return new ReadWrite(
                 $target,
-                File::MODE_APPEND_READ_WRITE,
+                \Hoa\File::MODE_APPEND_READ_WRITE,
                 $context
             );
-        } elseif (true === is_file($target)) {
-            return new File\ReadWrite(
-                $target,
-                File::MODE_APPEND_READ_WRITE,
-                $context
-            );
-        } elseif (true === is_dir($target)) {
-            return new File\Directory(
-                $target,
-                File::MODE_READ,
-                $context
-            );
-        }
 
-        throw new File\Exception(
+        elseif(true === is_file($target))
+            return new \Hoa\File\ReadWrite(
+                $target,
+                \Hoa\File::MODE_APPEND_READ_WRITE,
+                $context
+            );
+
+        elseif(true === is_dir($target))
+            return new \Hoa\File\Directory(
+                $target,
+                \Hoa\File::MODE_READ,
+                $context
+            );
+
+        throw new \Hoa\File\Exception(
             'Cannot find an appropriated object that matches with ' .
-            'path %s when defining it.',
-            1,
-            $target
-        );
+            'path %s when defining it.', 0, $target);
     }
 
     /**
      * Get the target name of a symbolic link.
      *
+     * @access  public
      * @return  string
      */
-    public function getTargetName()
-    {
+    public function getTargetName ( ) {
+
         return readlink($this->getStreamName());
     }
 
     /**
      * Create a link.
      *
+     * @access  public
      * @param   string  $name      Link name.
      * @param   string  $target    Target name.
      * @return  bool
      */
-    public static function create($name, $target)
-    {
-        if (false != linkinfo($name)) {
+    public static function create ( $name, $target ) {
+
+        if(false != linkinfo($name))
             return true;
-        }
 
         return symlink($target, $name);
     }
 }
 
-/**
- * Flex entity.
- */
-Consistency::flexEntity('Hoa\File\Link\Link');
+}

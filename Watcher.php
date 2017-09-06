@@ -8,7 +8,7 @@
  *
  * New BSD License
  *
- * Copyright © 2007-2017, Hoa community. All rights reserved.
+ * Copyright © 2007-2013, Ivan Enderlin. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,26 +34,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Hoa\File;
+namespace {
 
-use Hoa\Event;
+from('Hoa')
+
+/**
+ * \Hoa\File\Finder
+ */
+-> import('File.Finder');
+
+}
+
+namespace Hoa\File {
 
 /**
  * Class \Hoa\File\Watcher.
  *
  * A naive file system watcher that fires three events: new, move and modify.
  *
- * @copyright  Copyright © 2007-2017 Hoa community
+ * @author     Ivan Enderlin <ivan.enderlin@hoa-project.net>
+ * @copyright  Copyright © 2007-2013 Ivan Enderlin.
  * @license    New BSD License
  */
-class Watcher extends Finder implements Event\Listenable
-{
-    use Event\Listens;
+
+class Watcher extends Finder implements \Hoa\Core\Event\Listenable {
+
+    /**
+     * Listeners.
+     *
+     * @var \Hoa\Core\Event\Listener object
+     */
+    protected $_on      = null;
 
     /**
      * Latency.
      *
-     * @var int
+     * @var \Hoa\File\Watcher int
      */
     protected $_latency = 1;
 
@@ -62,28 +78,40 @@ class Watcher extends Finder implements Event\Listenable
     /**
      * Constructor.
      *
+     * @access  public
      * @param   int  $latency    Latency (in seconds).
+     * @return  void
      */
-    public function __construct($latency = null)
-    {
+    public function __construct ( $latency = null ) {
+
         parent::__construct();
 
-        $this->setListener(
-            new Event\Listener(
-                $this,
-                [
-                    'new',
-                    'modify',
-                    'move'
-                ]
-            )
-        );
+        $this->_on = new \Hoa\Core\Event\Listener($this, array(
+            'new',
+            'modify',
+            'move'
+        ));
 
-        if (null !== $latency) {
+        if(null !== $latency)
             $this->setLatency($latency);
-        }
 
         return;
+    }
+
+    /**
+     * Attach a callable to this listenable object.
+     *
+     * @access  public
+     * @param   string  $listenerId    Listener ID.
+     * @param   mixed   $callable      Callable.
+     * @return  \Hoa\Stream
+     * @return  \Hoa\Core\Exception
+     */
+    public function on ( $listenerId, $callable ) {
+
+        $this->_on->attach($listenerId, $callable);
+
+        return $this;
     }
 
     /**
@@ -94,53 +122,49 @@ class Watcher extends Finder implements Event\Listenable
      *     • modify, when a file has been modified;
      *     • move, when a file has moved, i.e. no longer found by the finder.
      *
+     * @access  public
      * @return  void
      */
-    public function run()
-    {
+    public function run ( ) {
+
         $iterator = $this->getIterator();
         $previous = iterator_to_array($iterator);
         $current  = $previous;
 
-        while (true) {
-            foreach ($current as $name => $c) {
-                if (!isset($previous[$name])) {
-                    $this->getListener()->fire(
+        while(true) {
+
+            foreach($current as $name => $c) {
+
+                if(!isset($previous[$name])) {
+
+                    $this->_on->fire(
                         'new',
-                        new Event\Bucket([
+                        new \Hoa\Core\Event\Bucket(array(
                             'file' => $c
-                        ])
+                        ))
                     );
 
                     continue;
                 }
 
-                if (null === $c->getHash()) {
-                    unset($current[$name]);
-
-                    continue;
-                }
-
-                if ($previous[$name]->getHash() != $c->getHash()) {
-                    $this->getListener()->fire(
+                if($previous[$name]->getHash() != $c->getHash())
+                    $this->_on->fire(
                         'modify',
-                        new Event\Bucket([
+                        new \Hoa\Core\Event\Bucket(array(
                             'file' => $c
-                        ])
+                        ))
                     );
-                }
 
                 unset($previous[$name]);
             }
 
-            foreach ($previous as $p) {
-                $this->getListener()->fire(
+            foreach($previous as $p)
+                $this->_on->fire(
                     'move',
-                    new Event\Bucket([
+                    new \Hoa\Core\Event\Bucket(array(
                         'file' => $p
-                    ])
+                    ))
                 );
-            }
 
             usleep($this->getLatency() * 1000000);
 
@@ -154,11 +178,12 @@ class Watcher extends Finder implements Event\Listenable
     /**
      * Set latency.
      *
+     * @access  public
      * @param   int  $latency    Latency (in seconds).
      * @return  int
      */
-    public function setLatency($latency)
-    {
+    public function setLatency ( $latency ) {
+
         $old            = $this->_latency;
         $this->_latency = $latency;
 
@@ -168,10 +193,13 @@ class Watcher extends Finder implements Event\Listenable
     /**
      * Get latency.
      *
+     * @access  public
      * @return  int
      */
-    public function getLatency()
-    {
+    public function getLatency ( ) {
+
         return $this->_latency;
     }
+}
+
 }

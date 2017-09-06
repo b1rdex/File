@@ -8,7 +8,7 @@
  *
  * New BSD License
  *
- * Copyright © 2007-2017, Hoa community. All rights reserved.
+ * Copyright © 2007-2013, Ivan Enderlin. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -34,58 +34,122 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-namespace Hoa\File;
+namespace {
 
-use Hoa\Iterator;
+from('Hoa')
+
+/**
+ * \Hoa\File\Exception
+ */
+-> import('File.Exception')
+
+/**
+ * \Hoa\File\ReadWrite
+ */
+-> import('File.ReadWrite')
+
+/**
+ * \Hoa\File\Directory
+ */
+-> import('File.Directory')
+
+/**
+ * \Hoa\File\Link\ReadWrite
+ */
+-> import('File.Link.ReadWrite');
+
+}
+
+namespace Hoa\File {
 
 /**
  * Class \Hoa\File\SplFileInfo.
  *
- * Link between \Hoa\Iterator\SplFileInfo and \Hoa\File.
+ * Link between SplFileInfo and \Hoa\File.
  *
- * @copyright  Copyright © 2007-2017 Hoa community
+ * @author     Ivan Enderlin <ivan.enderlin@hoa-project.net>
+ * @copyright  Copyright © 2007-2013 Ivan Enderlin.
  * @license    New BSD License
  */
-class SplFileInfo extends Iterator\SplFileInfo
-{
+
+class SplFileInfo extends \SplFileInfo {
+
     /**
      * Current stream.
      *
-     * @var \Hoa\File\Generic
+     * @var \Hoa\File\Generic object
      */
     protected $_stream = null;
 
+    /**
+     * Hash.
+     *
+     * @var \Hoa\File\SplFileInfo string
+     */
+    protected $_hash   = null;
 
+
+
+    /**
+     * Construct.
+     *
+     * @access  public
+     * @return  void
+     */
+    public function __construct ( $filename ) {
+
+        parent::__construct($filename);
+
+        $this->_hash = md5(
+            $this->getPathname() .
+            $this->getCTime()
+        );
+
+        return;
+    }
+
+    /**
+     * Get the hash.
+     *
+     * @access  public
+     * @return  string
+     */
+    public function getHash ( ) {
+
+        return $this->_hash;
+    }
 
     /**
      * Open the SplFileInfo as a Hoa\File stream.
      *
+     * @access  public
      * @return  \Hoa\File\Generic
-     * @throws  \Hoa\File\Exception
+     * @throw   \Hoa\File\Exception
      */
-    public function open()
-    {
-        if (true === $this->isFile()) {
-            return $this->_stream = new ReadWrite($this->getPathname());
-        } elseif (true === $this->isDir()) {
-            return $this->_stream = new Directory($this->getPathname());
-        } elseif (true === $this->isLink()) {
-            return $this->_stream = new Link\ReadWrite($this->getPathname());
-        }
+    public function open ( ) {
 
-        throw new Exception('%s has an unknown type.', 0, $this->getPathname());
+        if(true === $this->isFile())
+            return $this->_stream = new ReadWrite($this->getPathname());
+
+        elseif(true === $this->isDir())
+            return $this->_stream = new Directory($this->getPathname());
+
+        elseif(true === $this->isLink())
+            return $this->_stream = new Link\ReadWrite($this->getPathname());
+
+        throw new Exception('%s has a unknown type.', 0, $this->getPathname());
     }
 
     /**
      * Close the opened stream.
      *
-     * @return  void
+     * @access  public
+     * @return  mixed
      */
-    public function close()
-    {
-        if (null === $this->_stream) {
+    public function close ( ) {
+
+        if(null === $this->_stream)
             return;
-        }
 
         return $this->_stream->close();
     }
@@ -93,12 +157,15 @@ class SplFileInfo extends Iterator\SplFileInfo
     /**
      * Destruct.
      *
+     * @access  public
      * @return  void
      */
-    public function __destruct()
-    {
+    public function __destruct ( ) {
+
         $this->close();
 
         return;
     }
+}
+
 }
